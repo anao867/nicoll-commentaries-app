@@ -11,6 +11,8 @@ const editBtn = document.getElementById('editBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const exportBtn = document.getElementById('exportBtn');
+const adminTokenInput = document.getElementById('adminTokenInput');
+const adminUnlockBtn = document.getElementById('adminUnlockBtn');
 
 // Form Elements
 const addForm = document.getElementById('addForm');
@@ -23,6 +25,8 @@ const accessModeNotice = document.getElementById('accessModeNotice');
 
 let currentCommentaryId = null;
 let writeEnabled = true;
+let adminModeEnabled = false;
+let adminToken = localStorage.getItem('adminToken') || '';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -43,15 +47,24 @@ async function loadAccessMode() {
 
     const access = await response.json();
     writeEnabled = Boolean(access.writeEnabled);
+    adminModeEnabled = Boolean(adminToken);
     applyAccessMode();
   } catch (error) {
     writeEnabled = true;
+    adminModeEnabled = Boolean(adminToken);
     applyAccessMode();
   }
 }
 
+function canWrite() {
+  return writeEnabled || adminModeEnabled;
+}
+
 function applyAccessMode() {
-  if (writeEnabled) {
+  if (canWrite()) {
+    addBtn.style.display = '';
+    editBtn.style.display = '';
+    deleteBtn.style.display = '';
     accessModeNotice.classList.remove('visible');
     return;
   }
@@ -90,6 +103,7 @@ function setupEventListeners() {
   deleteBtn.addEventListener('click', deleteCurrentCommentary);
   cancelEditBtn.addEventListener('click', () => showSection('detail'));
   exportBtn.addEventListener('click', handleExportDatabase);
+  adminUnlockBtn.addEventListener('click', enableAdminMode);
 
   addForm.addEventListener('submit', handleAddCommentary);
   editForm.addEventListener('submit', handleEditCommentary);
@@ -98,6 +112,34 @@ function setupEventListeners() {
   searchInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleSearch();
   });
+}
+
+function enableAdminMode() {
+  const token = adminTokenInput.value.trim();
+
+  if (!token) {
+    localStorage.removeItem('adminToken');
+    adminToken = '';
+    adminModeEnabled = false;
+    applyAccessMode();
+    return;
+  }
+
+  adminToken = token;
+  adminModeEnabled = true;
+  localStorage.setItem('adminToken', token);
+  applyAccessMode();
+  alert('Admin mode enabled on this browser.');
+}
+
+function buildWriteHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+
+  if (adminToken) {
+    headers['x-admin-token'] = adminToken;
+  }
+
+  return headers;
 }
 
 function showSection(section) {
@@ -113,7 +155,7 @@ function showSection(section) {
       loadCommentaries();
       break;
     case 'add':
-      if (!writeEnabled) {
+      if (!canWrite()) {
         showSection('view');
         return;
       }
@@ -125,7 +167,7 @@ function showSection(section) {
       detailSection.classList.add('active');
       break;
     case 'edit':
-      if (!writeEnabled) {
+      if (!canWrite()) {
         showSection('detail');
         return;
       }
@@ -179,7 +221,7 @@ async function showDetail(id) {
 async function handleAddCommentary(e) {
   e.preventDefault();
 
-  if (!writeEnabled) {
+  if (!canWrite()) {
     alert('Aplicația este în mod doar citire.');
     return;
   }
@@ -190,7 +232,7 @@ async function handleAddCommentary(e) {
   try {
     const response = await fetch('/api/commentaries', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildWriteHeaders(),
       body: JSON.stringify({
         title,
         originalText: romanianTranslation, // Use Romanian as original for storage
@@ -215,7 +257,7 @@ async function handleAddCommentary(e) {
 async function handleEditCommentary(e) {
   e.preventDefault();
 
-  if (!writeEnabled) {
+  if (!canWrite()) {
     alert('Aplicația este în mod doar citire.');
     return;
   }
@@ -226,7 +268,7 @@ async function handleEditCommentary(e) {
   try {
     const response = await fetch(`/api/commentaries/${currentCommentaryId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildWriteHeaders(),
       body: JSON.stringify({
         title,
         originalText: romanianTranslation, // Use Romanian as original for storage
@@ -247,7 +289,7 @@ async function handleEditCommentary(e) {
 }
 
 async function deleteCurrentCommentary() {
-  if (!writeEnabled) {
+  if (!canWrite()) {
     alert('Aplicația este în mod doar citire.');
     return;
   }
@@ -258,7 +300,8 @@ async function deleteCurrentCommentary() {
 
   try {
     const response = await fetch(`/api/commentaries/${currentCommentaryId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: adminToken ? { 'x-admin-token': adminToken } : {}
     });
 
     if (response.ok) {

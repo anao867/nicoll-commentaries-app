@@ -79,6 +79,7 @@ Dacă portul este ocupat, va încerca automat următoarele porturi (`3001`, `300
 - `PORT_RETRIES` - câte porturi suplimentare să încerce (implicit `10`)
 - `NODE_ENV=production` - activează modul public read-only
 - `PUBLIC_WRITE_ENABLED=true` - permite scrierea și în production (implicit este blocată)
+- `ADMIN_TOKEN` - permite scrierea privată în production doar cu token valid
 - `DATABASE_URL` - activează PostgreSQL (dacă nu există, se folosește SQLite)
 - `PGSSLMODE=disable` - opțional pentru conexiuni locale Postgres fără SSL
 
@@ -90,6 +91,20 @@ Pentru a publica aplicația fără ca publicul să poată scrie:
 2. nu seta `PUBLIC_WRITE_ENABLED` (sau lasă-l diferit de `true`)
 
 În acest mod, endpoint-urile `POST/PUT/DELETE` răspund cu `403`, iar UI ascunde butoanele de adăugare/editare/ștergere.
+
+### Scriere privată pentru owner (fără acces public)
+
+Dacă vrei să editezi online dar publicul să rămână read-only:
+
+1. păstrează `NODE_ENV=production`
+2. păstrează `PUBLIC_WRITE_ENABLED=false`
+3. setează un secret `ADMIN_TOKEN` în Render env vars
+
+Aplicația permite scriere doar când request-ul include header-ul:
+
+`x-admin-token: <ADMIN_TOKEN>`
+
+În UI există câmpul **Admin token** (în navbar). După unlock, browserul tău poate adăuga/edita/șterge, iar vizitatorii rămân read-only.
 
 ## API Endpoints
 
@@ -104,6 +119,7 @@ All API endpoints are prefixed with `/api`:
 - `GET /health` - Health check for frontend/server monitoring
 - `GET /access` - Returns read-only/read-write mode capabilities
 - `GET /backup` - Download SQLite database backup
+- `POST/PUT/DELETE /commentaries...` - acceptate în production doar cu `x-admin-token` valid (dacă `ADMIN_TOKEN` este setat)
 
 ## Database Schema
 

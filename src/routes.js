@@ -5,18 +5,31 @@ const router = express.Router();
 const isProduction = process.env.NODE_ENV === 'production';
 const publicWriteEnabled = process.env.PUBLIC_WRITE_ENABLED === 'true';
 const writeEnabled = !isProduction || publicWriteEnabled;
+const adminToken = process.env.ADMIN_TOKEN || '';
+
+function hasValidAdminToken(req) {
+  const token = req.get('x-admin-token') || req.query.adminToken;
+  return Boolean(adminToken) && token === adminToken;
+}
 
 router.get('/access', (req, res) => {
   res.json({
     writeEnabled,
-    mode: writeEnabled ? 'read-write' : 'read-only'
+    mode: writeEnabled ? 'read-write' : 'read-only',
+    adminTokenConfigured: Boolean(adminToken)
   });
 });
 
 router.use((req, res, next) => {
   if (!writeEnabled && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    if (hasValidAdminToken(req)) {
+      return next();
+    }
+
     return res.status(403).json({
-      error: 'Read-only mode is enabled. Writing is not allowed.'
+      error: adminToken
+        ? 'Read-only mode is enabled. Valid admin token required for writing.'
+        : 'Read-only mode is enabled. Writing is not allowed.'
     });
   }
 

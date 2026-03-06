@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comentarii Psihologice de Maurice Nicoll</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Comentarii Psihologice de Maurice Nicoll</h1>
+      <p class="subtitle">Traduse în Română</p>
+    </header>
+
+    <nav class="navbar">
+      <button id="viewBtn" class="nav-btn active">Vizualizează Tot</button>
+      <button id="addBtn" class="nav-btn">Adaugă Nou</button>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Caută comentarii...">
+        <button id="searchBtn">Caută</button>
+      </div>
+    </nav>
+
+    <main>
+      <!-- View Section -->
+      <section id="viewSection" class="section active">
+        <div id="commentariesList" class="commentaries-grid">
+          <p class="loading">Se \u00eencarc\u0103 comentariile...</p>
+        </div>
+      </section>
+
+      <!-- Add Section -->
+      <section id="addSection" class="section">
+        <div class="form-container">
+          <h2>Adaugă Comentariu Nou</h2>
+          <form id="addForm">
+            <div class="form-group">
+              <label for="titleInput">Titlu:</label>
+              <input type="text" id="titleInput" required placeholder="Introdu titlul comentăriului">
+            </div>
+
+            <div class="form-group">
+              <label for="romanianInput">Traducere în Română:</label>
+              <textarea id="romanianInput" required placeholder="Introdu aici traducerea în română..." rows="12" spellcheck="false"></textarea>
+            </div>
+
+            <div class="form-buttons">
+              <button type="submit" class="btn-primary">Salvează Comentariu</button>
+              <button type="reset" class="btn-secondary">Golește</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Detail Section -->
+      <section id="detailSection" class="section">
+        <button id="backBtn" class="btn-back">← Înapoi</button>
+        <div id="detailContent" class="detail-container">
+          <h2 id="detailTitle"></h2>
+          <div class="detail-content-single">
+            <p id="detailRomanian"></p>
+          </div>
+          <div class="detail-buttons">
+            <button id="editBtn" class="btn-primary">Editează</button>
+            <button id="deleteBtn" class="btn-danger">Șterge</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Edit Section -->
+      <section id="editSection" class="section">
+        <button id="backFromEditBtn" class="btn-back">← Înapoi</button>
+        <div class="form-container">
+          <h2>Editează Comentariu</h2>
+          <form id="editForm">
+            <div class="form-group">
+              <label for="editTitleInput">Titlu:</label>
+              <input type="text" id="editTitleInput" required>
+            </div>
+
+            <div class="form-group">
+              <label for="editRomanianInput">Traducere în Română:</label>
+              <textarea id="editRomanianInput" required rows="12" spellcheck="false"></textarea>
+            </div>
+
+            <div class="form-buttons">
+              <button type="submit" class="btn-primary">Actualizează Comentariu</button>
+              <button type="button" id="cancelEditBtn" class="btn-secondary">Anulează</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>&copy; 2026 Proiect Comentarii Maurice Nicoll</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

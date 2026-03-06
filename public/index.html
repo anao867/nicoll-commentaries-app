@@ -16,11 +16,16 @@
     <nav class="navbar">
       <button id="viewBtn" class="nav-btn active">Vizualizează Tot</button>
       <button id="addBtn" class="nav-btn">Adaugă Nou</button>
+      <button id="exportBtn" class="nav-btn">Export DB</button>
+      <a href="/glossary/index.html" class="nav-btn nav-link" target="_blank">4th Way Glossary</a>
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Caută comentarii...">
         <button id="searchBtn">Caută</button>
       </div>
     </nav>
+
+    <div id="serverStatus" class="server-status unknown">Se verifică serverul...</div>
+  <div id="accessModeNotice" class="access-mode-notice">Mod public: doar citire (fără editare)</div>
 
     <main>
       <!-- View Section -->

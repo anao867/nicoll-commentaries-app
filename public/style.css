@@ -69,10 +69,57 @@ header h1 {
   color: white;
 }
 
+.nav-link {
+  text-decoration: none;
+  display: inline-block;
+}
+
 .search-box {
   display: flex;
   gap: 10px;
   margin-left: auto;
+}
+
+.server-status {
+  margin: 16px 20px 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.server-status.unknown {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 1px solid #e9ecef;
+}
+
+.server-status.online {
+  background: #eafaf1;
+  color: #1f7a4d;
+  border: 1px solid #bfe8d2;
+}
+
+.server-status.offline {
+  background: #fdecef;
+  color: #b02a37;
+  border: 1px solid #f5c2c7;
+}
+
+.access-mode-notice {
+  display: none;
+  margin: 12px 20px 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #fff8e1;
+  color: #8a6d1a;
+  border: 1px solid #f5e3a6;
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.access-mode-notice.visible {
+  display: block;
 }
 
 .search-box input {
@@ -159,6 +206,7 @@ main {
   color: #666;
   font-size: 0.95em;
   line-height: 1.6;
+  line-clamp: 3;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

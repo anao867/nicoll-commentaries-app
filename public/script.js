@@ -10,6 +10,7 @@ const backFromEditBtn = document.getElementById('backFromEditBtn');
 const editBtn = document.getElementById('editBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
+const exportBtn = document.getElementById('exportBtn');
 
 // Form Elements
 const addForm = document.getElementById('addForm');
@@ -17,14 +18,68 @@ const editForm = document.getElementById('editForm');
 const commentariesList = document.getElementById('commentariesList');
 const searchBtn = document.getElementById('searchBtn');
 const searchInput = document.getElementById('searchInput');
+const serverStatus = document.getElementById('serverStatus');
+const accessModeNotice = document.getElementById('accessModeNotice');
 
 let currentCommentaryId = null;
+let writeEnabled = true;
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadAccessMode();
+  checkServerHealth();
   loadCommentaries();
   setupEventListeners();
+  setInterval(checkServerHealth, 30000);
 });
+
+async function loadAccessMode() {
+  try {
+    const response = await fetch('/api/access', { cache: 'no-store' });
+
+    if (!response.ok) {
+      throw new Error('Access mode check failed');
+    }
+
+    const access = await response.json();
+    writeEnabled = Boolean(access.writeEnabled);
+    applyAccessMode();
+  } catch (error) {
+    writeEnabled = true;
+    applyAccessMode();
+  }
+}
+
+function applyAccessMode() {
+  if (writeEnabled) {
+    accessModeNotice.classList.remove('visible');
+    return;
+  }
+
+  addBtn.style.display = 'none';
+  editBtn.style.display = 'none';
+  deleteBtn.style.display = 'none';
+  accessModeNotice.classList.add('visible');
+}
+
+async function checkServerHealth() {
+  try {
+    const response = await fetch('/api/health', { cache: 'no-store' });
+
+    if (!response.ok) {
+      throw new Error('Health check failed');
+    }
+
+    const data = await response.json();
+    const modeLabel = data.mode === 'read-only' ? ' • read-only' : '';
+
+    serverStatus.className = 'server-status online';
+    serverStatus.textContent = `Server online${modeLabel}`;
+  } catch (error) {
+    serverStatus.className = 'server-status offline';
+    serverStatus.textContent = 'Server indisponibil - verifică dacă backend-ul rulează';
+  }
+}
 
 function setupEventListeners() {
   viewBtn.addEventListener('click', () => showSection('view'));
@@ -34,6 +89,7 @@ function setupEventListeners() {
   editBtn.addEventListener('click', () => showSection('edit'));
   deleteBtn.addEventListener('click', deleteCurrentCommentary);
   cancelEditBtn.addEventListener('click', () => showSection('detail'));
+  exportBtn.addEventListener('click', handleExportDatabase);
 
   addForm.addEventListener('submit', handleAddCommentary);
   editForm.addEventListener('submit', handleEditCommentary);
@@ -57,6 +113,10 @@ function showSection(section) {
       loadCommentaries();
       break;
     case 'add':
+      if (!writeEnabled) {
+        showSection('view');
+        return;
+      }
       addSection.classList.add('active');
       addBtn.classList.add('active');
       addForm.reset();
@@ -65,6 +125,10 @@ function showSection(section) {
       detailSection.classList.add('active');
       break;
     case 'edit':
+      if (!writeEnabled) {
+        showSection('detail');
+        return;
+      }
       editSection.classList.add('active');
       break;
   }
@@ -115,6 +179,11 @@ async function showDetail(id) {
 async function handleAddCommentary(e) {
   e.preventDefault();
 
+  if (!writeEnabled) {
+    alert('Aplicația este în mod doar citire.');
+    return;
+  }
+
   const title = document.getElementById('titleInput').value;
   const romanianTranslation = document.getElementById('romanianInput').value;
 
@@ -146,6 +215,11 @@ async function handleAddCommentary(e) {
 async function handleEditCommentary(e) {
   e.preventDefault();
 
+  if (!writeEnabled) {
+    alert('Aplicația este în mod doar citire.');
+    return;
+  }
+
   const title = document.getElementById('editTitleInput').value;
   const romanianTranslation = document.getElementById('editRomanianInput').value;
 
@@ -173,6 +247,11 @@ async function handleEditCommentary(e) {
 }
 
 async function deleteCurrentCommentary() {
+  if (!writeEnabled) {
+    alert('Aplicația este în mod doar citire.');
+    return;
+  }
+
   if (!confirm('E\u0219ti sigur()\u0103 c\u0103 vrei s\u0103 \u0219tergi acest comentariu?')) {
     return;
   }
@@ -222,5 +301,30 @@ async function handleSearch() {
   } catch (error) {
     console.error('Error searching:', error);
     alert('Eroare la c\u0103utarea comentariilor');
+  }
+}
+
+async function handleExportDatabase() {
+  try {
+    const response = await fetch('/api/backup');
+
+    if (!response.ok) {
+      throw new Error('Export failed');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+
+    downloadLink.href = url;
+    downloadLink.download = `commentaries-backup-${timestamp}.db`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error exporting database:', error);
+    alert('Eroare la exportul bazei de date');
   }
 }

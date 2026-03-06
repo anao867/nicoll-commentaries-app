@@ -2,6 +2,27 @@ const express = require('express');
 const db = require('./database');
 const router = express.Router();
 
+const isProduction = process.env.NODE_ENV === 'production';
+const publicWriteEnabled = process.env.PUBLIC_WRITE_ENABLED === 'true';
+const writeEnabled = !isProduction || publicWriteEnabled;
+
+router.get('/access', (req, res) => {
+  res.json({
+    writeEnabled,
+    mode: writeEnabled ? 'read-write' : 'read-only'
+  });
+});
+
+router.use((req, res, next) => {
+  if (!writeEnabled && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return res.status(403).json({
+      error: 'Read-only mode is enabled. Writing is not allowed.'
+    });
+  }
+
+  next();
+});
+
 // Get all commentaries
 router.get('/commentaries', (req, res) => {
   db.getAllCommentaries((err, commentaries) => {

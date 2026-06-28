@@ -1,0 +1,6 @@
+{
+  "name": "Fourth Way Glossary",
+  "short_name": "glossary",
+  "start_url": "./index.html",
+  "display": "standalone"
+}

@@ -4,13 +4,57 @@ const { Pool } = require('pg');
 
 const isPostgres = Boolean(process.env.DATABASE_URL);
 
+function buildPostgresConfig() {
+  const connectionString = process.env.DATABASE_URL;
+  const sslMode = (process.env.PGSSLMODE || '').toLowerCase();
+  const databaseSsl = (process.env.DATABASE_SSL || '').toLowerCase();
+
+  if (!connectionString) {
+    return null;
+  }
+
+  const config = { connectionString };
+
+  if (
+    databaseSsl === 'false' ||
+    ['disable', 'allow', 'prefer'].includes(sslMode)
+  ) {
+    config.ssl = false;
+    return config;
+  }
+
+  let sslRequestedInUrl = false;
+
+  try {
+    const databaseUrl = new URL(connectionString);
+    const urlSslMode = (databaseUrl.searchParams.get('sslmode') || '').toLowerCase();
+    const urlSsl = (databaseUrl.searchParams.get('ssl') || '').toLowerCase();
+
+    sslRequestedInUrl = [
+      'require',
+      'verify-ca',
+      'verify-full',
+      'no-verify'
+    ].includes(urlSslMode) || ['true', '1'].includes(urlSsl);
+  } catch (error) {
+    sslRequestedInUrl = false;
+  }
+
+  if (
+    databaseSsl === 'true' ||
+    ['require', 'verify-ca', 'verify-full', 'no-verify'].includes(sslMode) ||
+    sslRequestedInUrl
+  ) {
+    config.ssl = { rejectUnauthorized: false };
+  }
+
+  return config;
+}
+
 const sqliteDbPath = path.join(__dirname, '../data/commentaries.db');
 const sqliteDb = isPostgres ? null : new sqlite3.Database(sqliteDbPath);
 const pgPool = isPostgres
-  ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.PGSSLMODE === 'disable' ? false : { rejectUnauthorized: false }
-    })
+  ? new Pool(buildPostgresConfig())
   : null;
 
 const createTableSqlite = `
@@ -60,6 +104,24 @@ const database = {
       } else {
         console.log('Database initialized successfully! (sqlite)');
       }
+    });
+  },
+
+  checkHealth: async function() {
+    if (isPostgres) {
+      await pgPool.query('SELECT 1');
+      return { engine: 'postgres', status: 'ok' };
+    }
+
+    return new Promise((resolve, reject) => {
+      sqliteDb.get('SELECT 1', (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        resolve({ engine: 'sqlite', status: 'ok' });
+      });
     });
   },
 

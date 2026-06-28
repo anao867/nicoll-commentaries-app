@@ -80,17 +80,20 @@ async function checkServerHealth() {
     const response = await fetch('/api/health', { cache: 'no-store' });
 
     if (!response.ok) {
-      throw new Error('Health check failed');
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.database?.message || 'Health check failed';
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
     const modeLabel = data.mode === 'read-only' ? ' • read-only' : '';
+    const databaseLabel = data.database?.status === 'ok' ? '' : ' • database issue';
 
     serverStatus.className = 'server-status online';
-    serverStatus.textContent = `Server online${modeLabel}`;
+    serverStatus.textContent = `Server online${modeLabel}${databaseLabel}`;
   } catch (error) {
     serverStatus.className = 'server-status offline';
-    serverStatus.textContent = 'Server indisponibil - verifică dacă backend-ul rulează';
+    serverStatus.textContent = `Server indisponibil - ${error.message}`;
   }
 }
 

@@ -17,7 +17,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
-app.use('/glossary', express.static(path.join(__dirname, '../4thWayGlossary')));
+app.use('/glossary', express.static(path.join(__dirname, 'public', 'glossary')));
 
 // Initialize database
 db.initialize();
@@ -25,12 +25,28 @@ db.initialize();
 // API Routes
 app.use('/api', routes);
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    mode: writeEnabled ? 'read-write' : 'read-only',
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const databaseHealth = await db.checkHealth();
+
+    res.json({
+      status: 'ok',
+      mode: writeEnabled ? 'read-write' : 'read-only',
+      database: databaseHealth,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'degraded',
+      mode: writeEnabled ? 'read-write' : 'read-only',
+      database: {
+        engine: db.getEngine(),
+        status: 'error',
+        message: error.message
+      },
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 app.get('/api/backup', (req, res) => {
